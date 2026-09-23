@@ -63,19 +63,25 @@ export const getStateDataForPurchaseProcess = (txInfo, processInfo) => {
         showActionButtons: true,
         primaryButtonProps: actionButtonProps(transitions.MARK_DELIVERED, PROVIDER, {
           actionButtonTranslationId,
-        }),
-      };
-    })
-    .cond([states.DELIVERED, CUSTOMER], () => {
-      return {
-        processName,
-        processState,
-        showDetailCardHeadings: true,
-        showDispute: true,
-        showActionButtons: true,
-        primaryButtonProps: actionButtonProps(transitions.MARK_RECEIVED, CUSTOMER),
-      };
-    })
+     .cond([states.DELIVERED, CUSTOMER], () => {
+  const shippedAt = transaction?.attributes?.lastTransitionedAt;
+  const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
+
+  const canMarkReceived =
+    shippedAt && Date.now() >= new Date(shippedAt).getTime() + threeDaysInMs;
+
+  return {
+    processName,
+    processState,
+    showDetailCardHeadings: true,
+    showDispute: true,
+    showActionButtons: !!canMarkReceived,
+    primaryButtonProps: canMarkReceived
+      ? actionButtonProps(transitions.MARK_RECEIVED, CUSTOMER)
+      : null,
+  };
+})    
+  
     .cond([states.COMPLETED, _], () => {
       return {
         processName,
